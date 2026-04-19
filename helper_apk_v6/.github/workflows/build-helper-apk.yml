@@ -94,7 +94,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CapCutHelper-v6-release-${{ github.sha }}
-          path: build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
       - name: Create GitHub Release
