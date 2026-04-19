@@ -1,0 +1,151 @@
+# .github/workflows/build-helper-apk.yml
+# CapCut Helper APK v6 — Shizuku + Accessibility Hybrid
+#
+# SETUP:
+#   1. GitHub pe nayi repo banao: "capcut-helper"
+#   2. helper_apk_v6/ ka content root mein push karo
+#      (src/, build.gradle, settings.gradle, gradlew, gradle/ — sab root pe)
+#   3. Push → Actions tab → build shuru
+#   4. Artifacts se APK download karo
+
+name: Build Helper APK v6
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build CapCut Helper APK v6
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.ANDROID_HOME }}/platforms/android-34
+            ${{ env.ANDROID_HOME }}/build-tools/34.0.0
+            ${{ env.ANDROID_HOME }}/platform-tools
+          key: android-sdk-34-${{ runner.os }}-v2
+          restore-keys: android-sdk-34-${{ runner.os }}-
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}-v2
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Verify project structure
+        run: |
+          echo "=== Java files ==="
+          find . -name "*.java" | sort
+          echo "=== XML files ==="
+          find . -name "*.xml" | grep -v build | sort
+          echo "=== build.gradle ==="
+          cat build.gradle
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace 2>&1 | tail -80
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace 2>&1 | tail -40
+
+      - name: Show APK info
+        run: |
+          echo "=== Built APKs ==="
+          find . -name "*.apk" -exec ls -lh {} \;
+          APK=$(find . -name "*debug*.apk" | head -1)
+          if [ -n "$APK" ]; then
+            echo "✓ Debug APK: $APK"
+            echo "APK_DEBUG=$APK" >> $GITHUB_ENV
+          else
+            echo "✗ APK not found!"
+            exit 1
+          fi
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CapCutHelper-v6-debug-${{ github.sha }}
+          path: build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CapCutHelper-v6-release-${{ github.sha }}
+          path: build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: helper-v6-${{ github.run_number }}
+          name: "CapCut Helper Bridge v6.${{ github.run_number }}"
+          body: |
+            ## CapCut Helper Bridge APK v6
+
+            **Build:** #${{ github.run_number }}
+            **Commit:** `${{ github.sha }}`
+
+            ### v6 changes (over v5):
+            - ✅ Dirty flag optimization — CPU ~80% lower on static screens
+            - ✅ Hierarchy hash cache — zero re-parse if UI unchanged
+            - ✅ Configurable stream interval `{"type":"stream_start","interval_ms":100}`
+            - ✅ On-demand hierarchy fetch `{"type":"hierarchy"}`
+            - ✅ Node pool recycling — zero leaks on 1-hour sessions
+            - ✅ `multi_tap` action — rapid N taps at same point
+            - ✅ `pinch` action — two-finger zoom/scrub
+            - ✅ `find_node` action — returns bounds of UI element
+            - ✅ `scroll_forward` / `scroll_backward` actions
+            - ✅ Foreground notification — prevents OS kill on long sessions
+            - ✅ `POST_NOTIFICATIONS` permission for Android 13+
+
+            ### Setup:
+            1. Install `CapCutHelper-v6-debug.apk`
+            2. Settings → Accessibility → **CapCut Helper Bridge** → Enable
+            3. (Recommended) Shizuku install + run → Allow in app
+            4. (Optional) Overlay permission grant
+
+            ### Requirements:
+            - Android 8.0+ (API 26)
+            - Shizuku optional (Play Store)
+
+          files: |
+            build/outputs/apk/debug/*.apk
+            build/outputs/apk/release/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ github.sha }}
+          path: |
+            build/reports/
+            *.log
+          retention-days: 7

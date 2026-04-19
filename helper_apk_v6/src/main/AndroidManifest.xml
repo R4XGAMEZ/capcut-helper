@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  CapCut Helper Bridge v6 — AndroidManifest.xml
+  com.r4x.capcut_helper
+  Hybrid: Accessibility (UI scrape) + Shizuku (ADB tap/swipe)
+-->
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.r4x.capcut_helper">
+
+    <!-- Shizuku runtime permission -->
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23"/>
+
+    <!-- Overlay window -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
+    <!-- Foreground service (keep-alive on Android 13+ long sessions) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+
+    <!-- Boot auto-start -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
+    <!-- Tap feedback -->
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
+    <!-- Post notification (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <application
+        android:label="CapCut Helper Bridge"
+        android:description="@string/helper_description"
+        android:allowBackup="false"
+        android:supportsRtl="true"
+        android:hardwareAccelerated="true">
+
+        <!-- ── Accessibility Service ─────────────────────────────────── -->
+        <!--
+            canPerformGestures="true"       → dispatchGesture() ke liye ZARURI
+            canRetrieveWindowContent="true" → getRootInActiveWindow() ke liye ZARURI
+        -->
+        <service
+            android:name=".HelperAccessibilityService"
+            android:label="CapCut Helper Bridge"
+            android:description="@string/helper_description"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true"
+            android:foregroundServiceType="specialUse">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/helper_service_config"/>
+        </service>
+
+        <!-- ── Shizuku UserService (runs as shell UID 2000) ──────────── -->
+        <service
+            android:name=".shizuku.ShizukuUserService"
+            android:exported="true"
+            android:process=":shizuku_service"/>
+
+        <!-- ── Settings / Launcher Activity ─────────────────────────── -->
+        <activity
+            android:name=".SettingsActivity"
+            android:label="CapCut Helper"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!-- ── Boot Receiver ─────────────────────────────────────────── -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>
