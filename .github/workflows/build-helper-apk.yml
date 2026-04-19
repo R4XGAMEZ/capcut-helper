@@ -74,7 +74,7 @@ jobs:
         run: |
           echo "=== Built APKs ==="
           find . -name "*.apk" -exec ls -lh {} \;
-          APK=$(find . -name "*debug*.apk" | head -1)
+          APK=$(find . -name *.apk" | head -1)
           if [ -n "$APK" ]; then
             echo "✓ Debug APK: $APK"
             echo "APK_DEBUG=$APK" >> $GITHUB_ENV
