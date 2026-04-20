@@ -16,5 +16,3 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "CapCutHelperBridge"
-include ':app'
-project(':app').projectDir = new File('.')
