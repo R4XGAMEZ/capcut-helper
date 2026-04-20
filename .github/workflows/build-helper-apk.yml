@@ -65,10 +65,10 @@ jobs:
           cat build.gradle
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace 2>&1 | tail -80
+        run: ./gradlew assembleDebug --stacktrace 2>&1 | tail -100
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace 2>&1 | tail -40
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Show APK info
         run: |
