@@ -1,0 +1,66 @@
+// build.gradle — Helper APK v6 (com.r4x.capcut_helper)
+// Shizuku API 13.1.0 + Accessibility hybrid + AndroidX core
+
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace         'com.r4x.capcut_helper'
+    compileSdk        34
+
+    defaultConfig {
+        applicationId   "com.r4x.capcut_helper"
+        minSdk          26          // Shizuku v13 requirement
+        targetSdk       34
+        versionCode     6
+        versionName     "6.0.0"
+        multiDexEnabled true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled   false   // Proguard OFF — a11y + Shizuku reflection breaks with it
+            shrinkResources false
+            signingConfig   signingConfigs.debug
+        }
+        debug {
+            debuggable true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    packaging {
+        resources {
+            excludes += [
+                'META-INF/DEPENDENCIES',
+                'META-INF/LICENSE',
+                'META-INF/LICENSE.txt',
+            ]
+        }
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    // ── Shizuku ──────────────────────────────────────────────────────
+    implementation 'dev.rikka.shizuku:api:13.1.0'
+    implementation 'dev.rikka.shizuku:provider:13.1.0'
+
+    // ── AndroidX ─────────────────────────────────────────────────────
+    implementation 'androidx.core:core:1.12.0'
+    implementation 'androidx.annotation:annotation:1.7.1'
+    // For foreground notification (NotificationCompat)
+    implementation 'androidx.core:core:1.12.0'
+
+    // org.json, LocalServerSocket, GestureDescription — Android built-in
+}
